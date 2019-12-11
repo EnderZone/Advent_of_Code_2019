@@ -1,7 +1,8 @@
 use std::fs;
 use std::string::String;
 
-fn main() {
+#[allow(dead_code)]
+fn main_day_one() {
     let filename = "src/input.txt";
     let contents: String = fs::read_to_string(filename).expect("Guess the filename is incorrect");
 
@@ -40,6 +41,63 @@ fn main() {
     }
 
     println!("{}", instructions[position_zero as usize]);
+}
+
+fn main() {
+    let filename = "src/input.txt";
+    let contents: String = fs::read_to_string(filename).expect("Guess the filename is incorrect");
+
+    let instructions : Vec<i32> = contents
+        .split(",")
+        .map(|input| input.parse::<i32>().unwrap())
+        .collect::<Vec<i32>>();
+
+    for noun in 0..99 {
+        for verb in 0..99 {
+            let mut test_set : Vec<i32> = instructions.clone();
+            test_set[1] = noun;
+            test_set[2] = verb;
+
+            if run_program(&mut test_set) == 19690720 {
+                let answer = 100 * noun + verb;
+                println!("{}", answer);
+                return;
+            }
+        }
+    }
+}
+
+fn run_program(program : &mut Vec<i32>) -> i32 {
+    let mut program_counter: u32 = 0;
+    let mut position_zero: u32 = 0;
+    let mut found_pos_zero: bool = false;
+
+    while program[program_counter as usize] != 99 {
+        let current_num: i32 = program[program_counter as usize];
+        program_counter += match current_num {
+            1 => {
+                opcode_add(program, program_counter);
+                4
+            }
+            2 => {
+                opcode_multiply(program, program_counter);
+                4
+            }
+            _ => {
+                if found_pos_zero {
+                    unreachable!("CODE FOUND ERROR");
+                }
+                1
+            }
+        };
+
+        if current_num + 1 == program_counter as i32 {
+            position_zero = program_counter;
+            found_pos_zero = true;
+        }
+    }
+
+    program[position_zero as usize]
 }
 
 fn opcode_add(program: &mut Vec<i32>, program_index: u32) {
