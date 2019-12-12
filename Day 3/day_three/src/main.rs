@@ -75,7 +75,7 @@ fn add_wire_segment(
     direction: Direction,
     length: u32,
     wireboard: &mut HashMap<Coordinate, Wire>,
-    crossings: &mut HashMap<Coordinate, u32>,
+    crossings: &mut Vec<Coordinate>,
     wire: &Wire,
 ) {
     let dir: Coordinate = match direction {
@@ -89,7 +89,7 @@ fn add_wire_segment(
         start.add_coordinate(&dir);
         if wireboard.contains_key(start) {
             if *(wireboard.get(start).unwrap()) != *wire {
-                crossings.insert(*start, get_total_cost(wireboard, wire));
+                crossings.push(*start);
             }
         } else {
             wireboard.insert(*start, *wire);
@@ -97,34 +97,90 @@ fn add_wire_segment(
     }
 }
 
-fn get_total_cost(wireboard: &mut HashMap<Coordinate, Wire>, curr_wire: &Wire) -> u32 {
-    let mut total_cost = 0;
-
-    for (coordinate, wire) in &*wireboard {
-        if wire == curr_wire {
-            total_cost += 1;
-        }
-    }
-
-    total_cost
-}
-
-fn find_shortest(crossings: &mut HashMap<Coordinate, u32>) -> u32 {
+fn find_shortest(crossings: &mut Vec<Coordinate>) -> u32 {
     let mut shortest: u32 = std::u32::MAX;
 
-    for (cross, dist) in &*crossings {
+    crossings.iter().for_each(|cross| {
         let cross_manhattan_dist = cross.get_manhattan_distance();
         if shortest > cross_manhattan_dist {
             shortest = cross_manhattan_dist;
         }
-    }
+    });
 
     shortest
 }
 
+fn check_in_between(coord_one: Coordinate, coord_two: Coordinate, test_coord : Coordinate, dir: Direction) -> bool {
+    match dir {        
+        Direction::U => {
+            (coord_one.pos_y <= test_coord.pos_y) & (test_coord.pos_y <= coord_two.pos_y)
+        },
+        Direction::D => {
+            (coord_one.pos_y >= test_coord.pos_y) & (test_coord.pos_y >= coord_two.pos_y)
+        },
+        Direction::L => {
+            (coord_one.pos_x <= test_coord.pos_x) & (test_coord.pos_x <= coord_two.pos_x)
+        },
+        Direction::R => {
+            (coord_one.pos_x >= test_coord.pos_x) & (test_coord.pos_x >= coord_two.pos_x)
+        },
+    }
+}
+
+fn get_cross_distance(mut instructions: String, target: Coordinate) -> u32 {
+    let mut total: u32 = 0;
+
+    let mut start: Coordinate = Coordinate::build_coordinate(0, 0);
+
+    for command in instructions.split(",") {
+        let dir: Direction = match &command[..1] {
+            "U" => Direction::U,
+            "D" => Direction::D,
+            "L" => Direction::L,
+            "R" => Direction::R,
+            _ => unreachable!("WHAT HAPPENED"),
+        };
+
+        let length: i32 = command[1..].to_string().parse::<i32>().unwrap();
+        total += length as u32;
+
+        let movement: Coordinate = match dir {
+            Direction::U => Coordinate::build_coordinate(0, length),
+            Direction::D => Coordinate::build_coordinate(0, -1*(length)),
+            Direction::L => Coordinate::build_coordinate(length, 0),
+            Direction::R => Coordinate::build_coordinate(-1*(length), 0),
+        };
+
+        let curr_coord: Coordinate = start;
+        start.add_coordinate(&movement);
+        if check_in_between(curr_coord, start, target, dir) {
+            break;
+        }
+    }
+
+    total
+}
+
+fn find_shortest_distance(wires: &mut Vec<String>, crossings: Vec<Coordinate>) -> u32 {
+    let mut shortest_dist: u32 = std::u32::MAX;
+
+    for cross in crossings {
+        let mut curr_dist: u32 = 0;
+        for mut wire_directions in wires.iter() {
+            curr_dist += get_cross_distance(wire_directions.to_string(), cross);
+        }
+
+        if curr_dist < shortest_dist {
+            shortest_dist = curr_dist;
+        }
+    }
+
+    shortest_dist
+}
+
 fn part_one() {
     let mut wireboard: HashMap<Coordinate, Wire> = HashMap::new();
-    let mut crossings: HashMap<Coordinate, u32> = HashMap::new();
+    let mut crossings: Vec<Coordinate> = Vec::new();
 
     let mut wires: Vec<String> = Vec::new();
     collect_input(String::from("src/input.txt"), &mut wires);
@@ -165,7 +221,7 @@ fn part_one() {
 
 fn part_two() {
     let mut wireboard: HashMap<Coordinate, Wire> = HashMap::new();
-    let mut crossings: HashMap<Coordinate, u32> = HashMap::new();
+    let mut crossings: Vec<Coordinate> = Vec::new();
 
     let mut wires: Vec<String> = Vec::new();
     collect_input(String::from("src/input.txt"), &mut wires);
@@ -196,12 +252,8 @@ fn part_two() {
 
         index += 1;
     }
-
-    crossings
-        .iter()
-        .for_each(|cross| println!("{}", cross.to_string()));
-
-    println!("{}", find_shortest(&mut crossings));
+    
+    println!("FINAL NUM: {}", find_shortest_distance(&mut wires, crossings));
 }
 
 fn collect_input(filename: String, wires: &mut Vec<String>) {
