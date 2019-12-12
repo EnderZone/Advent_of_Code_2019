@@ -113,16 +113,16 @@ fn find_shortest(crossings: &mut Vec<Coordinate>) -> u32 {
 fn check_in_between(coord_one: Coordinate, coord_two: Coordinate, test_coord : Coordinate, dir: Direction) -> bool {
     match dir {        
         Direction::U => {
-            (coord_one.pos_y <= test_coord.pos_y) & (test_coord.pos_y <= coord_two.pos_y)
-        },
-        Direction::D => {
-            (coord_one.pos_y >= test_coord.pos_y) & (test_coord.pos_y >= coord_two.pos_y)
-        },
-        Direction::L => {
             (coord_one.pos_x <= test_coord.pos_x) & (test_coord.pos_x <= coord_two.pos_x)
         },
-        Direction::R => {
+        Direction::D => {
             (coord_one.pos_x >= test_coord.pos_x) & (test_coord.pos_x >= coord_two.pos_x)
+        },
+        Direction::L => {
+            (coord_one.pos_y <= test_coord.pos_y) & (test_coord.pos_y <= coord_two.pos_y)
+        },
+        Direction::R => {
+            (coord_one.pos_y >= test_coord.pos_y) & (test_coord.pos_y >= coord_two.pos_y)
         },
     }
 }
@@ -172,6 +172,7 @@ fn find_shortest_distance(wires: &mut Vec<String>, crossings: Vec<Coordinate>) -
 
         if curr_dist < shortest_dist {
             shortest_dist = curr_dist;
+            println!("{}", cross.to_string());
         }
     }
 
